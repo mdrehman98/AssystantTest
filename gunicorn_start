@@ -1,0 +1,62 @@
+NAME="proj"                         # Name of the application
+DJANGODIR=./             # Django project directory
+VENVDIR=../             # Django project directory
+#SOCKFILE=/webapps/hello_django/run/gunicorn.sock  # we will communicte using this unix socket
+USER=root                                         # the user to run as
+GROUP=proj                                     # the group to run as
+NUM_WORKERS=1                                # how many worker processes should Gunicorn spawn
+DJANGO_SETTINGS_MODULE=proj.settings.local             # which settings file should Django use
+DJANGO_WSGI_MODULE=proj.wsgi                     # WSGI module name
+#DJANGO_SETTINGS_ENVIRONMENT=development
+
+#echo "Starting $NAME as `whoami`"
+#
+## Activate the virtual environment
+cd $DJANGODIR
+echo "`pwd`"
+echo $DJANGO_SETTINGS_ENVIRONMENT
+#source "${DJANGODIR}/venv/bin/activate"
+
+if [ "$DJANGO_SETTINGS_ENVIRONMENT" == "development" ]
+then
+   DJANGO_SETTINGS_MODULE=tinc.settings.dev
+elif [ "$DJANGO_SETTINGS_ENVIRONMENT" == "production" ]
+then
+   DJANGO_SETTINGS_MODULE=tinc.settings.prod
+   NUM_WORKERS=5
+else
+   DJANGO_SETTINGS_MODULE=tinc.settings.local
+fi
+
+echo $DJANGO_SETTINGS_ENVIRONMENT
+export DJANGO_SETTINGS_MODULE=$DJANGO_SETTINGS_MODULE
+export DJANGO_SETTINGS_ENVIRONMENT=$DJANGO_SETTINGS_ENVIRONMENT
+#export PYTHONPATH=$DJANGODIR:$PYTHONPATH
+
+SERVICE_NAME="$1"
+if [ "$1" == "taskapp" ]
+then
+   SERVICE_PORT="9000"
+fi
+
+#if [ "$1" == "taskapp" ]
+#then
+ # python manage.py crontab remove
+  # python manage.py crontab add
+
+#  pkill -f -9 celery
+#  exec celery -A scheduler beat -l info >> celery_beat.log &
+#  exec celery worker -A scheduler -l info >> celery_worker.log &
+#fi
+
+# Start your Django Unicorn
+# Programs meant to be run under supervisor should not daemonize themselves (do not use --daemon)
+#exec ${VENVDIR}venv/bin/gunicorn  --workers ${NUM_WORKERS} --bind 0.0.0.0:${SERVICE_PORT} ${DJANGO_WSGI_MODULE}:application ${SERVICE_NAME} >> samp.log &
+echo "starting gunicorn service"
+echo "gunicorn  --workers ${NUM_WORKERS} --bind 0.0.0.0:${SERVICE_PORT} ${DJANGO_WSGI_MODULE}:application ${SERVICE_NAME} >> samp.log &"
+exec gunicorn  --workers ${NUM_WORKERS} --bind 0.0.0.0:${SERVICE_PORT} ${DJANGO_WSGI_MODULE}:application ${SERVICE_NAME} >> samp.log &
+#if [ "$1" == "BackOffice_Service" ]
+#then
+#  exec celery -A scheduler beat -l info &
+#  exec celery worker -A scheduler -l info &
+#fi
